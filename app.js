@@ -228,6 +228,15 @@ function beep(n = 1) {
   } catch (e) {}
 }
 function vibrate(p) { try { if (navigator.vibrate) navigator.vibrate(p); } catch (e) {} }
+function say(text) {
+  try {
+    if (data.voice === false || !('speechSynthesis' in window)) return;
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'es'; u.rate = 1;
+    speechSynthesis.speak(u);
+  } catch (e) {}
+}
 
 // ---------- Estado de la sesión ----------
 const S = {
@@ -305,6 +314,7 @@ function checkKm() {
   if (km > S.lastKmMark) {
     S.lastKmMark = km;
     toast(`🎉 ¡${km} km! Vas muy bien`);
+    say(`${km} kilómetro${km > 1 ? 's' : ''}. Vas muy bien`);
     vibrate([200, 100, 200]);
   }
 }
@@ -314,6 +324,7 @@ function announce(ph) {
   toast(`${ph.type === 'run' ? '🏃 ¡Trota!' : '🚶 Camina suave'} · ${fmtSecs(ph.secs)}`);
   vibrate(ph.type === 'run' ? [300, 150, 300] : [200]);
   beep(ph.type === 'run' ? 2 : 1);
+  say(ph.type === 'run' ? `Trota ahora, ${fmtSecs(ph.secs)}` : `Camina suave, ${fmtSecs(ph.secs)}`);
 }
 function advanceGuide(now) {
   const g = S.guide;
@@ -323,6 +334,7 @@ function advanceGuide(now) {
     toast('✅ ¡Plan de hoy completo! Pulsa ■ Terminar para guardarlo.');
     vibrate([300, 150, 300, 150, 300]);
     beep(3);
+    say('Plan de hoy completo. ¡Muy bien! Pulsa terminar para guardar.');
     return;
   }
   g.end = now + g.phases[g.idx].secs * 1000;
@@ -560,6 +572,7 @@ function loadSettings() {
   $('#sDay').value = data.dayGoal;
   $('#sWeek').value = data.weekGoal;
   $('#sRemOn').checked = !!data.reminderOn;
+  $('#sVoice').checked = data.voice !== false;
   $('#sRemTime').value = data.reminderTime || '19:00';
   renderNotifState();
 }
@@ -631,7 +644,8 @@ $('#sSave').onclick = () => {
   if (!(w >= 30 && w <= 250) || !(dg > 0) || !(wg > 0)) { toast('Revisa los valores'); return; }
   Object.assign(data, {
     weight: w, dayGoal: dg, weekGoal: wg,
-    reminderOn: $('#sRemOn').checked, reminderTime: $('#sRemTime').value || '19:00'
+    reminderOn: $('#sRemOn').checked, reminderTime: $('#sRemTime').value || '19:00',
+    voice: $('#sVoice').checked
   });
   persist(); renderAll(); toast('Guardado ✔');
 };
