@@ -46,6 +46,7 @@
   button.danger-txt{background:none;color:var(--danger);border:1px solid var(--danger)}
   button:disabled{opacity:.4}
   button.mini{flex:0 0 auto;padding:9px 12px;font-size:14px;border-radius:10px}
+  .btns button{white-space:nowrap;font-size:15px;padding:14px 6px}
   .seg{display:flex;gap:8px;margin-top:10px}
   .seg > button{flex:1 1 0}
   .small{font-size:13px;color:var(--muted)}
@@ -129,7 +130,7 @@
     <div class="card">
       <div class="grid" style="margin-top:0">
         <div class="stat"><b id="tKm">0</b><span>km totales</span></div>
-        <div class="stat"><b id="tSes">0</b><span>sesiones</span></div>
+        <div class="stat"><b id="tSes">0</b><span id="tSesLbl">sesiones</span></div>
         <div class="stat"><b id="tKcal">0</b><span>kcal totales</span></div>
         <div class="stat"><b id="tTime">0 min</b><span>tiempo total</span></div>
       </div>

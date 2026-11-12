@@ -506,6 +506,7 @@ function renderHist() {
   const t = totals();
   $('#tKm').textContent = (t.km).toFixed(1);
   $('#tSes').textContent = t.sessions;
+  $('#tSesLbl').textContent = t.sessions === 1 ? 'sesión' : 'sesiones';
   $('#tKcal').textContent = Math.round(t.kcal).toLocaleString('es-CL');
   $('#tTime').textContent = fmtHM(t.secs);
   const list = $('#histList');
