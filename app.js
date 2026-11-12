@@ -213,6 +213,51 @@ function checkReminders() {
   else toast(body);
 }
 
+// ---------- Banda de frecuencia cardíaca (Bluetooth estándar, Web Bluetooth) ----------
+const HR = { device: null, bpm: null };
+function renderHR() {
+  const conectada = !!HR.device;
+  $('#hr').textContent = HR.bpm != null ? `❤️ ${HR.bpm} ppm` : '';
+  $('#hrTxt').textContent = conectada
+    ? (HR.bpm != null ? `Conectada · ${HR.bpm} ppm` : 'Conectada, esperando datos…')
+    : 'No conectada';
+  $('#hrBtn').textContent = conectada ? 'Desconectar' : 'Conectar banda';
+}
+function onHR(ev) {
+  const v = ev.target.value;
+  const flags = v.getUint8(0);
+  HR.bpm = (flags & 0x01) ? v.getUint16(1, true) : v.getUint8(1);
+  if (S.status === 'run') S.hr.push(HR.bpm);
+  renderHR();
+}
+async function connectHR() {
+  if (!navigator.bluetooth) { toast('Este navegador no admite Bluetooth. Usa Chrome en Android.'); return; }
+  try {
+    const dev = await navigator.bluetooth.requestDevice({ filters: [{ services: ['heart_rate'] }] });
+    dev.addEventListener('gattserverdisconnected', () => {
+      HR.device = null; HR.bpm = null; renderHR(); toast('La banda se desconectó');
+    });
+    const server = await dev.gatt.connect();
+    const service = await server.getPrimaryService('heart_rate');
+    const ch = await service.getCharacteristic('heart_rate_measurement');
+    await ch.startNotifications();
+    ch.addEventListener('characteristicvaluechanged', onHR);
+    HR.device = dev;
+    renderHR(); toast('❤️ Banda conectada');
+  } catch (e) {
+    toast('No se pudo conectar la banda');
+    renderHR();
+  }
+}
+$('#hrBtn').onclick = () => {
+  if (HR.device) {
+    try { HR.device.gatt.disconnect(); } catch (e) {}
+    HR.device = null; HR.bpm = null; renderHR();
+  } else {
+    connectHR();
+  }
+};
+
 // ---------- Sonido y vibración ----------
 let audioCtx = null;
 function beep(n = 1) {
@@ -249,6 +294,7 @@ const S = {
   route: [],             // [[lat, lng], ...]
   last: null,            // último punto aceptado {lat, lng, t}
   wake: null,
+  hr: [],                // muestras de frecuencia cardíaca de la sesión
   guide: null            // plan guiado: {phases, idx, end, remain, done}
 };
 const elapsed = () => S.acc + (S.status === 'run' ? Date.now() - S.segStart : 0);
@@ -363,7 +409,7 @@ function start() {
   if (S.status !== 'idle') return;
   Object.assign(S, {
     sid: Date.now(), startISO: new Date().toISOString(), acc: 0, meters: 0, kcal: 0,
-    kmh: null, lastMoveAt: 0, lastKmMark: 0, route: [], last: null
+    kmh: null, lastMoveAt: 0, lastKmMark: 0, route: [], last: null, hr: []
   });
   line.setLatLngs([]);
   histLine.setLatLngs([]);
@@ -400,6 +446,8 @@ function stop() {
 
   const secs = Math.round(S.acc / 1000);
   const guideDone = !!(S.guide && S.guide.done);
+  const avgHr = S.hr.length ? Math.round(S.hr.reduce((a, b) => a + b, 0) / S.hr.length) : null;
+  const maxHr = S.hr.length ? Math.max(...S.hr) : null;
   const before = totals();
   const prevWeek = data.plan.week;
   let msg;
@@ -408,6 +456,7 @@ function stop() {
       id: S.sid, start: S.startISO, secs,
       meters: Math.round(S.meters), kcal: Math.round(S.kcal), guided: guideDone,
       incomplete: !!(S.guide && !guideDone),
+      avgHr, maxHr,
       route: S.route.map(([a, b]) => [+a.toFixed(5), +b.toFixed(5)])
     });
     if (guideDone) advancePlan();
@@ -533,7 +582,7 @@ function renderHist() {
                  d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
     return `<div class="row click" data-id="${esc(s.id)}">
       <div><b>${esc(when)}${s.guided ? ' 🗓️' : ''}</b>
-        <div class="small">${kmv.toFixed(2)} km · ${fmtTime(s.secs)} · ${pace} min/km · ${Math.round(s.kcal)} kcal</div>
+        <div class="small">${kmv.toFixed(2)} km · ${fmtTime(s.secs)} · ${pace} min/km · ${Math.round(s.kcal)} kcal${s.avgHr ? ` · ❤️ ${s.avgHr} ppm (máx ${s.maxHr})` : ''}</div>
         ${s.incomplete ? '<div class="small" style="color:var(--danger)">⚠️ Plan sin terminar: no cuenta para tu avance</div>' : ''}</div>
       <button class="ghost mini" data-del="${esc(s.id)}" aria-label="Borrar">🗑️</button>
     </div>`;
@@ -732,6 +781,7 @@ if (saved) {
 
 renderAll();
 setButtons();
+renderHR();
 startGPS(); // pide ubicación para centrar el mapa
 checkReminders();
 

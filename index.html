@@ -103,6 +103,7 @@
         <button class="stop" id="bStop" disabled>■ Terminar</button>
       </div>
       <p class="small" id="gps">GPS: esperando permiso…</p>
+      <p class="small" id="hr" style="color:var(--danger)"></p>
     </div>
 
     <div class="card">
@@ -186,6 +187,12 @@
       <input id="sDay" type="number" min="0.5" step="0.5" inputmode="decimal">
       <label>Meta semanal (km)</label>
       <input id="sWeek" type="number" min="1" step="1" inputmode="decimal">
+    </div>
+    <div class="card">
+      <b>❤️ Banda de frecuencia cardíaca</b>
+      <p class="small">Opcional. Si tienes una banda pectoral Bluetooth, la app muestra tu frecuencia cardíaca durante la sesión. Funciona en Chrome de Android con la app abierta. El Galaxy Fit3 no sirve para esto.</p>
+      <p class="small" id="hrTxt">No conectada</p>
+      <div class="btns" style="margin-top:0"><button class="ghost" id="hrBtn">Conectar banda</button></div>
     </div>
     <div class="card">
       <b>🔔 Recordatorios</b>
