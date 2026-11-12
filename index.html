@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#16a34a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caminata">
+<title>Caminata y Trote</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  :root{
+    --bg:#f2f6f3; --card:#ffffff; --ink:#13241a; --muted:#5f7266; --line:#dfe8e2;
+    --brand:#16a34a; --accent:#0ea5e9; --danger:#dc2626;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0e1712; --card:#172219; --ink:#e7f2eb; --muted:#9ab4a4; --line:#27392d; --brand:#22c55e;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    padding:0 0 calc(70px + env(safe-area-inset-bottom));overflow-x:hidden}
+  header{padding:calc(12px + env(safe-area-inset-top)) 16px 4px;font-weight:700;font-size:20px}
+  main{padding:0 12px}
+  .view{display:none}
+  .view.on{display:block}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+  #map{height:38vh;min-height:220px;border-radius:16px;border:1px solid var(--line);z-index:0}
+  .clock{font-size:52px;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 2px}
+  .mode{text-align:center;color:var(--muted);font-size:15px;min-height:20px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}
+  .stat{background:var(--bg);border-radius:12px;padding:10px;text-align:center}
+  .stat b{display:block;font-size:24px;font-variant-numeric:tabular-nums}
+  .stat span{font-size:13px;color:var(--muted)}
+  .btns{display:flex;gap:10px;margin-top:12px}
+  button{font:inherit;border:0;border-radius:14px;padding:14px;font-weight:700;font-size:16px;cursor:pointer;flex:1;color:#fff}
+  .go{background:var(--brand)}
+  .pause{background:var(--accent)}
+  .stop{background:var(--danger)}
+  button.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+  button.danger-txt{background:none;color:var(--danger);border:1px solid var(--danger)}
+  button:disabled{opacity:.4}
+  button.mini{flex:0 0 auto;padding:9px 12px;font-size:14px;border-radius:10px}
+  .seg{display:flex;gap:8px;margin-top:10px}
+  .seg > button{flex:1 1 0}
+  .small{font-size:13px;color:var(--muted)}
+  .welcome{display:none;background:var(--bg);border-radius:12px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.4}
+  .motivo{font-size:15px;line-height:1.4;text-align:center}
+  nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);
+    padding-bottom:env(safe-area-inset-bottom)}
+  nav button{background:none;color:var(--muted);border-radius:0;padding:10px 0;font-size:12px;flex:1}
+  nav button.on{color:var(--brand)}
+  .bar{height:12px;background:var(--bg);border-radius:8px;overflow:hidden;margin:6px 0 10px}
+  .bar i{display:block;height:100%;background:var(--brand);width:0;transition:width .4s}
+  .badges{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+  .badge{border:1px solid var(--line);border-radius:14px;padding:10px;text-align:center;opacity:.35;font-size:14px}
+  .badge.on{opacity:1;background:var(--bg)}
+  .badge .ico{font-size:28px}
+  .row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row.click{cursor:pointer}
+  input{font:inherit;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);width:100%}
+  input[type=checkbox]{width:auto}
+  label{display:block;font-size:14px;color:var(--muted);margin:10px 0 4px}
+  label.check{display:flex;align-items:center;gap:8px;color:var(--ink)}
+  .inline{display:flex;gap:8px;align-items:flex-end}
+  .inline > div{flex:1;min-width:0}
+  .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:84px;background:#13241a;color:#fff;padding:12px 16px;
+    border-radius:12px;opacity:0;transition:opacity .3s;pointer-events:none;width:max-content;max-width:90%;
+    text-align:center;white-space:pre-line;z-index:999}
+  .toast.on{opacity:1}
+  .leaflet-container{font-family:inherit}
+</style>
+</head>
+<body>
+<header>🚶🏃 Caminata y Trote</header>
+<main>
+
+  <section class="view on" id="v-run">
+    <div id="map"></div>
+
+    <div class="card">
+      <div class="clock" id="clock">00:00:00</div>
+      <div class="mode" id="mode">Listo para salir</div>
+      <div class="grid">
+        <div class="stat"><b id="dist">0.00</b><span>km</span></div>
+        <div class="stat"><b id="pace">--:--</b><span>min/km</span></div>
+        <div class="stat"><b id="kmh">0.0</b><span>km/h</span></div>
+        <div class="stat"><b id="kcal">0</b><span>kcal</span></div>
+      </div>
+      <div class="btns">
+        <button class="go" id="bStart">▶ Iniciar</button>
+        <button class="pause" id="bPause" disabled>⏸ Pausar</button>
+        <button class="stop" id="bStop" disabled>■ Terminar</button>
+      </div>
+      <p class="small" id="gps">GPS: esperando permiso…</p>
+    </div>
+
+    <div class="card">
+      <div class="welcome" id="welcome">
+        👋 <b>¡Qué bueno que empiezas!</b> No necesitas correr rápido. El plan alterna trote y caminata
+        para que tu cuerpo se acostumbre poco a poco. Tres días a la semana bastan.
+      </div>
+      <b id="planTitle">Semana 1 de 8</b>
+      <p class="small" id="planDesc"></p>
+      <div class="bar"><i id="planBar"></i></div>
+      <div class="seg">
+        <button class="go mini" id="mGuide">🗓️ Plan de hoy</button>
+        <button class="ghost mini" id="mFree">🆓 Libre</button>
+      </div>
+    </div>
+
+    <div class="card motivo" id="motivo"></div>
+
+    <div class="card">
+      <div class="small">Hoy: <span id="hoyTxt">0 km</span></div>
+      <div class="bar"><i id="hoyBar"></i></div>
+      <div class="small">Esta semana: <span id="semTxt">0 km</span></div>
+      <div class="bar"><i id="semBar"></i></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-hist">
+    <div class="card">
+      <div class="grid" style="margin-top:0">
+        <div class="stat"><b id="tKm">0</b><span>km totales</span></div>
+        <div class="stat"><b id="tSes">0</b><span>sesiones</span></div>
+        <div class="stat"><b id="tKcal">0</b><span>kcal totales</span></div>
+        <div class="stat"><b id="tTime">0 min</b><span>tiempo total</span></div>
+      </div>
+    </div>
+    <div class="card">
+      <b>Sesiones</b>
+      <p class="small">Toca una sesión para ver su ruta en el mapa. 🗓️ = sesión del plan.</p>
+      <div id="histList"></div>
+    </div>
+  </section>
+
+  <section class="view" id="v-prem">
+    <div class="card">
+      <div class="row"><b>🔥 Racha</b><span id="streak">0 días</span></div>
+      <div class="row"><b>📅 Esta semana</b><span id="semTxt2">0 km</span></div>
+    </div>
+    <div class="card">
+      <b>🏅 Insignias</b>
+      <div class="badges" id="badges"></div>
+    </div>
+    <div class="card">
+      <b>🎁 Mis premios</b>
+      <p class="small">Ponte un premio. Se desbloquea al llegar a los km acumulados que elijas.</p>
+      <div id="rewardList"></div>
+      <label>Premio</label>
+      <input id="rName" placeholder="Ej: helado, película, zapatillas nuevas" maxlength="60">
+      <label>Km acumulados necesarios</label>
+      <div class="inline">
+        <div><input id="rKm" type="number" min="0.5" step="0.5" inputmode="decimal" placeholder="Ej: 50"></div>
+        <button class="go mini" id="rAdd">Agregar</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="v-set">
+    <div class="card">
+      <label>Tu peso (kg) — para calcular las calorías</label>
+      <input id="sWeight" type="number" min="30" max="250" inputmode="decimal">
+      <label>Meta diaria (km)</label>
+      <input id="sDay" type="number" min="0.5" step="0.5" inputmode="decimal">
+      <label>Meta semanal (km)</label>
+      <input id="sWeek" type="number" min="1" step="1" inputmode="decimal">
+    </div>
+    <div class="card">
+      <b>🔔 Recordatorios</b>
+      <p class="small">Si a la hora elegida aún no cumples tu meta de hoy, te avisamos con un mensaje de ánimo.
+        Funciona mientras la app esté abierta o en segundo plano; si el teléfono la tiene cerrada del todo, no puede avisar.</p>
+      <label class="check"><input type="checkbox" id="sRemOn"> Recordatorio diario</label>
+      <label>Hora del recordatorio</label>
+      <input id="sRemTime" type="time">
+      <div class="btns"><button class="ghost" id="sNotif">Permitir notificaciones</button></div>
+      <p class="small" id="sNotifTxt"></p>
+    </div>
+    <div class="card">
+      <div class="btns" style="margin-top:0"><button class="go" id="sSave">Guardar cambios</button></div>
+    </div>
+    <div class="card">
+      <p class="small">Todos los datos se guardan solo en este teléfono (en el navegador).</p>
+      <div class="btns"><button class="danger-txt" id="sReset">Borrar todos los datos</button></div>
+    </div>
+  </section>
+
+</main>
+
+<nav>
+  <button class="on" data-v="v-run">🏃 Entrenar</button>
+  <button data-v="v-hist">📋 Historial</button>
+  <button data-v="v-prem">🏆 Premios</button>
+  <button data-v="v-set">⚙️ Ajustes</button>
+</nav>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
