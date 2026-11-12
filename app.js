@@ -489,6 +489,8 @@ function renderPlan() {
                               : `Semana ${p.week} de 8 · sesión ${p.doneInWeek + 1} de 3`;
   $('#planDesc').textContent = p.completed ? 'Ya puedes correr libre. ¡Gran trabajo!' : describePlan(w);
   $('#planBar').style.width = (p.completed ? 100 : ((p.week - 1 + p.doneInWeek / 3) / 8 * 100)) + '%';
+  $('#planFases').innerHTML = planPhases(p.week)
+    .map(x => `<li>${x.type === 'run' ? '🏃 Trota' : '🚶 Camina'} · ${fmtSecs(x.secs)}</li>`).join('');
   renderMode();
 }
 function renderMotivo() {

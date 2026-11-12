@@ -49,6 +49,8 @@
   .btns button{white-space:nowrap;font-size:15px;padding:14px 6px}
   .seg{display:flex;gap:8px;margin-top:10px}
   .seg > button{flex:1 1 0}
+  .fases summary{cursor:pointer;color:var(--brand);font-weight:600;margin:8px 0}
+  .fases ol{margin:6px 0 0 20px;padding:0;line-height:1.7}
   .small{font-size:13px;color:var(--muted)}
   .welcome{display:none;background:var(--bg);border-radius:12px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.4}
   .motivo{font-size:15px;line-height:1.4;text-align:center}
@@ -110,6 +112,10 @@
       </div>
       <b id="planTitle">Semana 1 de 8</b>
       <p class="small" id="planDesc"></p>
+      <details class="fases">
+        <summary>Ver las fases de hoy</summary>
+        <ol class="small" id="planFases"></ol>
+      </details>
       <div class="bar"><i id="planBar"></i></div>
       <div class="seg">
         <button class="go mini" id="mGuide">🗓️ Plan de hoy</button>
