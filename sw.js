@@ -1,4 +1,4 @@
-const CACHE = 'caminata-trote-v2';
+const CACHE = 'caminata-trote-v3';
 const SHELL = ['./', './index.html', './app.js', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -20,13 +20,17 @@ self.addEventListener('fetch', e => {
   const cacheable = url.origin === self.location.origin || url.hostname === 'cdnjs.cloudflare.com';
   if (!cacheable) return; // los mapas (OpenStreetMap) siempre desde la red
 
-  e.respondWith(
-    caches.match(req).then(hit => hit || fetch(req).then(res => {
-      if (res.ok || res.type === 'opaque') {
-        const copy = res.clone();
-        caches.open(CACHE).then(c => c.put(req, copy));
-      }
-      return res;
-    }))
-  );
+  const sameOrigin = url.origin === self.location.origin;
+  // Archivos propios: red primero (así las actualizaciones llegan solas); sin red, usa la copia guardada.
+  // Leaflet (CDN): caché primero, porque no cambia.
+  const handler = sameOrigin
+    ? fetch(req).then(res => {
+        if (res.ok) caches.open(CACHE).then(c => c.put(req, res.clone()));
+        return res;
+      }).catch(() => caches.match(req))
+    : caches.match(req).then(hit => hit || fetch(req).then(res => {
+        if (res.ok || res.type === 'opaque') caches.open(CACHE).then(c => c.put(req, res.clone()));
+        return res;
+      }));
+  e.respondWith(handler);
 });
