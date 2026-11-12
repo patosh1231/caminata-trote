@@ -671,6 +671,38 @@ $('#sReset').onclick = () => {
   renderAll(); loadSettings(); toast('Datos borrados');
 };
 
+// ---------- Copia de seguridad ----------
+$('#bExport').onclick = () => {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `caminata-respaldo-${dayKey(new Date())}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  toast('Respaldo descargado. Guárdalo en un lugar seguro.');
+};
+$('#bImport').onclick = () => $('#fImport').click();
+$('#fImport').onchange = async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (S.status !== 'idle') { toast('Termina la sesión antes de importar'); return; }
+  try {
+    const obj = JSON.parse(await file.text());
+    if (!obj || !Array.isArray(obj.sessions) || !Array.isArray(obj.rewards)) throw new Error('formato');
+    if (!confirm(`¿Reemplazar tus datos actuales por el respaldo? (${obj.sessions.length} sesiones, ${obj.rewards.length} premios)`)) return;
+    data = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), obj);
+    data.plan = Object.assign({ week: 1, doneInWeek: 0, completed: false, guided: true }, data.plan || {});
+    persist(); renderAll(); loadSettings();
+    toast('Datos restaurados ✔');
+  } catch (err) {
+    toast('Ese archivo no es un respaldo válido');
+  }
+};
+
 // ---------- Toast ----------
 let toastTimer;
 function toast(msg) {
