@@ -559,7 +559,7 @@ function loadSettings() {
   $('#sRemTime').value = data.reminderTime || '19:00';
   renderNotifState();
 }
-function renderAll() { renderLive(); renderPlan(); renderMotivo(); renderGoals(); renderHist(); renderPrem(); }
+function renderAll() { renderLive(); renderPlan(); renderMotivo(); renderGoals(); renderHist(); renderPrem(); renderNotifCard(); }
 
 // ---------- Navegación y eventos ----------
 function show(id) {
@@ -631,12 +631,21 @@ $('#sSave').onclick = () => {
   });
   persist(); renderAll(); toast('Guardado ✔');
 };
-$('#sNotif').onclick = async () => {
+async function requestNotif() {
   if (!('Notification' in window)) { renderNotifState(); return; }
   const r = await Notification.requestPermission();
-  renderNotifState();
-  if (r === 'granted') notify('¡Listo! 🎉', 'Te avisaremos si hoy aún no has salido a moverte.', 'test');
-};
+  renderNotifState(); renderNotifCard();
+  if (r === 'granted') {
+    notify('¡Listo! 🎉', 'Te avisaremos si hoy aún no has salido a moverte.', 'test');
+    toast('🔔 Recordatorios activados');
+  }
+}
+$('#sNotif').onclick = requestNotif;
+$('#notifBtn').onclick = requestNotif;
+function renderNotifCard() {
+  const pedir = 'Notification' in window && Notification.permission === 'default';
+  $('#notifCard').style.display = pedir ? 'block' : 'none';
+}
 $('#sReset').onclick = () => {
   if (!confirm('¿Borrar TODAS las sesiones, premios y progreso del plan? No se puede deshacer.')) return;
   data = JSON.parse(JSON.stringify(DEFAULTS));

@@ -52,6 +52,7 @@
   .small{font-size:13px;color:var(--muted)}
   .welcome{display:none;background:var(--bg);border-radius:12px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.4}
   .motivo{font-size:15px;line-height:1.4;text-align:center}
+  .alerta{border-color:var(--brand);border-width:2px}
   nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);
     padding-bottom:env(safe-area-inset-bottom)}
   nav button{background:none;color:var(--muted);border-radius:0;padding:10px 0;font-size:12px;flex:1}
@@ -114,6 +115,12 @@
         <button class="go mini" id="mGuide">🗓️ Plan de hoy</button>
         <button class="ghost mini" id="mFree">🆓 Libre</button>
       </div>
+    </div>
+
+    <div class="card alerta" id="notifCard" style="display:none">
+      <b>🔔 Activa tus recordatorios</b>
+      <p class="small">Si hoy aún no sales, te avisamos con un mensaje de ánimo. Sin permiso no podemos avisarte.</p>
+      <div class="btns" style="margin-top:8px"><button class="go" id="notifBtn">Permitir notificaciones</button></div>
     </div>
 
     <div class="card motivo" id="motivo"></div>
