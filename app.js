@@ -395,6 +395,7 @@ function stop() {
     data.sessions.push({
       id: S.sid, start: S.startISO, secs,
       meters: Math.round(S.meters), kcal: Math.round(S.kcal), guided: guideDone,
+      incomplete: !!(S.guide && !guideDone),
       route: S.route.map(([a, b]) => [+a.toFixed(5), +b.toFixed(5)])
     });
     if (guideDone) advancePlan();
@@ -518,7 +519,8 @@ function renderHist() {
                  d.toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' });
     return `<div class="row click" data-id="${esc(s.id)}">
       <div><b>${esc(when)}${s.guided ? ' 🗓️' : ''}</b>
-        <div class="small">${kmv.toFixed(2)} km · ${fmtTime(s.secs)} · ${pace} min/km · ${Math.round(s.kcal)} kcal</div></div>
+        <div class="small">${kmv.toFixed(2)} km · ${fmtTime(s.secs)} · ${pace} min/km · ${Math.round(s.kcal)} kcal</div>
+        ${s.incomplete ? '<div class="small" style="color:var(--danger)">⚠️ Plan sin terminar: no cuenta para tu avance</div>' : ''}</div>
       <button class="ghost mini" data-del="${esc(s.id)}" aria-label="Borrar">🗑️</button>
     </div>`;
   }).join('');
